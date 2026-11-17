@@ -98,6 +98,7 @@ func TestSearchValidation(t *testing.T) {
 		{Category: "nope"}, {Difficulty: "0"}, {Difficulty: "6"}, {Difficulty: "x"},
 		{Limit: "0"}, {Limit: "101"}, {Limit: "abc"}, {Role: "tertiary"},
 		{Equipment: []string{"jetpack"}}, {Cursor: "!!!"}, {Cursor: "bm9jb2xvbg"}, {Q: strings.Repeat("a", 101)},
+		{Q: "a\x00b"}, {Q: "\x00"}, {Q: "a\nb"}, {Q: "\xff"}, {Muscle: "chest\x00"},
 	}
 	for i, p := range bad {
 		_, err := svc.SearchExercises(context.Background(), "u", p)

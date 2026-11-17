@@ -8,6 +8,8 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -209,6 +211,11 @@ func (s *Service) buildFilter(p SearchParams) (Filter, error) {
 	f.Q = strings.TrimSpace(p.Q)
 	if len(f.Q) > maxQueryLen {
 		bad["q"] = "max 100 characters"
+	} else if !cleanText(f.Q) {
+		bad["q"] = "must not contain control characters or invalid UTF-8"
+	}
+	if !cleanText(f.Muscle) {
+		bad["muscle"] = "must not contain control characters or invalid UTF-8"
 	}
 	if p.Category != "" && !categories[p.Category] {
 		bad["category"] = "must be one of push, pull, legs, core, full_body, skills"
@@ -249,6 +256,12 @@ func (s *Service) buildFilter(p SearchParams) (Filter, error) {
 		return Filter{}, &ValidationError{Details: bad}
 	}
 	return f, nil
+}
+
+// cleanText reports whether s is valid UTF-8 without control characters (e.g. NUL,
+// which Postgres rejects and would otherwise surface as a 500).
+func cleanText(s string) bool {
+	return utf8.ValidString(s) && strings.IndexFunc(s, unicode.IsControl) < 0
 }
 
 // normalizeEquipment trims, de-duplicates and splits valid codes from unknown ones.
