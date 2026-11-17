@@ -16,6 +16,7 @@ import (
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/config"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/db"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/profile"
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/workout"
 )
 
 // NewRouter wires config -> db -> repositories -> services -> handlers.
@@ -24,7 +25,8 @@ func NewRouter(cfg config.Config) http.Handler {
 	verifier := newVerifier(cfg)
 	ph := profile.NewHandler(profile.NewService(profile.NewPGRepository(pool)))
 	ch := catalog.NewHandler(catalog.NewService(catalog.NewPGRepository(pool)))
-	return Build(pool, verifier, ph, ch)
+	wh := workout.NewHandler(workout.NewService(workout.NewPGRepository(pool)))
+	return Build(pool, verifier, ph, ch, wh)
 }
 
 func newVerifier(cfg config.Config) *auth.Verifier {
@@ -45,7 +47,7 @@ func newVerifier(cfg config.Config) *auth.Verifier {
 }
 
 // Build assembles routes from ready dependencies (also used by tests).
-func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Handler) http.Handler {
+func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Handler, wh *workout.Handler) http.Handler {
 	r := chi.NewRouter()
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) { apierr.NotFound(w, "route not found") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
@@ -73,6 +75,19 @@ func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Han
 		r.Get("/api/v1/muscles", ch.Muscles)
 		r.Get("/api/v1/exercises", ch.ListExercises)
 		r.Get("/api/v1/exercises/{id}", ch.GetExercise)
+
+		r.Get("/api/v1/plans", wh.ListPlans)
+		r.Post("/api/v1/plans", wh.CreatePlan)
+		r.Get("/api/v1/plans/{id}", wh.GetPlan)
+		r.Put("/api/v1/plans/{id}", wh.ReplacePlan)
+		r.Delete("/api/v1/plans/{id}", wh.DeletePlan)
+		r.Get("/api/v1/sessions", wh.ListSessions)
+		r.Post("/api/v1/sessions", wh.StartSession)
+		r.Get("/api/v1/sessions/active", wh.ActiveSession)
+		r.Get("/api/v1/sessions/{id}", wh.GetSession)
+		r.Patch("/api/v1/sessions/{id}/sets/{setId}", wh.UpdateSet)
+		r.Post("/api/v1/sessions/{id}/finish", wh.FinishSession)
+		r.Get("/api/v1/records", wh.Records)
 	})
 	return r
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/catalog"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/db"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/profile"
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/workout"
 )
 
 const iss = "https://proj.supabase.co/auth/v1"
@@ -56,7 +57,7 @@ func newTestRouter(t *testing.T) http.Handler {
 		"user-a": {ID: "user-a", Locale: "en", CreatedAt: time.Unix(0, 0).UTC()},
 		"user-b": {ID: "user-b", Locale: "th", CreatedAt: time.Unix(0, 0).UTC()},
 	}}
-	return Build(db.New(""), v, profile.NewHandler(profile.NewService(repo)), catalog.NewHandler(catalog.NewService(&stubCatalog{})))
+	return Build(db.New(""), v, profile.NewHandler(profile.NewService(repo)), catalog.NewHandler(catalog.NewService(&stubCatalog{})), workout.NewHandler(workout.NewService(&stubWorkout{})))
 }
 
 func tokenFor(t *testing.T, sub string) string {
@@ -153,5 +154,33 @@ func TestCatalogRoutesRequireAuth(t *testing.T) {
 	rec := do(h, http.MethodGet, "/api/v1/equipment", tokenFor(t, "user-a"), "")
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"equipment"`) {
 		t.Errorf("GET /equipment = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// stubWorkout satisfies workout.Repository for router-level tests.
+type stubWorkout struct{ workout.Repository }
+
+func (*stubWorkout) GetPlan(context.Context, string, string) (workout.Plan, error) {
+	return workout.Plan{}, workout.ErrNotFound
+}
+
+func TestWorkoutRoutesRequireAuthAndMap404(t *testing.T) {
+	h := newTestRouter(t)
+	id := "11111111-1111-1111-1111-111111111111"
+	routes := []struct{ method, path string }{
+		{"GET", "/api/v1/plans"}, {"POST", "/api/v1/plans"}, {"GET", "/api/v1/plans/" + id},
+		{"PUT", "/api/v1/plans/" + id}, {"DELETE", "/api/v1/plans/" + id},
+		{"GET", "/api/v1/sessions"}, {"POST", "/api/v1/sessions"}, {"GET", "/api/v1/sessions/active"},
+		{"GET", "/api/v1/sessions/" + id}, {"PATCH", "/api/v1/sessions/" + id + "/sets/" + id},
+		{"POST", "/api/v1/sessions/" + id + "/finish"}, {"GET", "/api/v1/records"},
+	}
+	for _, rt := range routes {
+		if rec := do(h, rt.method, rt.path, "", "{}"); rec.Code != http.StatusUnauthorized {
+			t.Errorf("%s %s without token = %d, want 401", rt.method, rt.path, rec.Code)
+		}
+	}
+	rec := do(h, http.MethodGet, "/api/v1/plans/"+id, tokenFor(t, "11111111-1111-1111-1111-111111111112"), "")
+	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), `"not_found"`) {
+		t.Errorf("foreign plan = %d %s", rec.Code, rec.Body.String())
 	}
 }
