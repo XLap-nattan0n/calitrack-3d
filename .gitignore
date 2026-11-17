@@ -14,3 +14,7 @@ coverage/
 /backend/bin/
 supabase/.temp/
 supabase/.branches/
+
+*.tsbuildinfo
+next-env.d.ts
+.claude/
