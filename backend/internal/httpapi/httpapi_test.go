@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/auth"
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/catalog"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/db"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/profile"
 )
@@ -55,7 +56,7 @@ func newTestRouter(t *testing.T) http.Handler {
 		"user-a": {ID: "user-a", Locale: "en", CreatedAt: time.Unix(0, 0).UTC()},
 		"user-b": {ID: "user-b", Locale: "th", CreatedAt: time.Unix(0, 0).UTC()},
 	}}
-	return Build(db.New(""), v, profile.NewHandler(profile.NewService(repo)))
+	return Build(db.New(""), v, profile.NewHandler(profile.NewService(repo)), catalog.NewHandler(catalog.NewService(&stubCatalog{})))
 }
 
 func tokenFor(t *testing.T, sub string) string {
@@ -132,5 +133,25 @@ func TestPatchValidationAndErrorFormat(t *testing.T) {
 	}
 	if rec := do(h, http.MethodGet, "/api/v1/me", tokenFor(t, "ghost"), ""); rec.Code != 404 {
 		t.Fatalf("unknown profile = %d", rec.Code)
+	}
+}
+
+// stubCatalog satisfies catalog.Repository for router-level tests.
+type stubCatalog struct{ catalog.Repository }
+
+func (*stubCatalog) ListEquipment(context.Context) ([]catalog.Equipment, error) {
+	return []catalog.Equipment{{ID: 1, Code: "bodyweight", NameEn: "Bodyweight"}}, nil
+}
+
+func TestCatalogRoutesRequireAuth(t *testing.T) {
+	h := newTestRouter(t)
+	for _, path := range []string{"/api/v1/equipment", "/api/v1/muscles", "/api/v1/exercises", "/api/v1/me/equipment"} {
+		if rec := do(h, http.MethodGet, path, "", ""); rec.Code != http.StatusUnauthorized {
+			t.Errorf("%s without token = %d, want 401", path, rec.Code)
+		}
+	}
+	rec := do(h, http.MethodGet, "/api/v1/equipment", tokenFor(t, "user-a"), "")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"equipment"`) {
+		t.Errorf("GET /equipment = %d %s", rec.Code, rec.Body.String())
 	}
 }
