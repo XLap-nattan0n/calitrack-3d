@@ -1,0 +1,603 @@
+openapi: 3.0.3
+info:
+  title: CaliTrack 3D API
+  version: 1.0.0
+  description: |
+    Source of truth for the FE/BE contract. Changes require CTO approval.
+    All endpoints except /health require `Authorization: Bearer <Supabase JWT>`.
+    Resources owned by another user respond 404 (existence is not disclosed).
+    Timestamps are ISO-8601 UTC. UI-facing messages are English.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: meta
+  - name: profile
+  - name: catalog
+  - name: plans
+  - name: sessions
+  - name: analytics
+paths:
+  /health:
+    get:
+      tags: [meta]
+      security: []
+      summary: Liveness check (public)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, example: ok }
+  /me:
+    get:
+      tags: [profile]
+      summary: Current user profile
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Profile' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+    patch:
+      tags: [profile]
+      summary: Update profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string, maxLength: 80 }
+                locale: { type: string, default: en, example: en }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Profile' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/equipment:
+    get:
+      tags: [profile]
+      summary: Equipment selected by the user
+      responses:
+        '200': { $ref: '#/components/responses/EquipmentList' }
+        '401': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [profile]
+      summary: Replace selected equipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [equipment_codes]
+              properties:
+                equipment_codes:
+                  type: array
+                  items: { $ref: '#/components/schemas/EquipmentCode' }
+      responses:
+        '200': { $ref: '#/components/responses/EquipmentList' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /equipment:
+    get:
+      tags: [catalog]
+      summary: All equipment
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [equipment]
+                properties:
+                  equipment: { type: array, items: { $ref: '#/components/schemas/Equipment' } }
+  /muscle-groups:
+    get:
+      tags: [catalog]
+      summary: Muscle groups
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/MuscleGroup' } }
+  /muscles:
+    get:
+      tags: [catalog]
+      summary: Muscles with 3D mesh names
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Muscle' } }
+  /exercises:
+    get:
+      tags: [catalog]
+      summary: Search/filter exercises
+      description: When `equipment` is omitted, defaults to the user's selected equipment.
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { $ref: '#/components/schemas/Category' } }
+        - { name: difficulty, in: query, schema: { type: integer, minimum: 1, maximum: 5 } }
+        - name: equipment
+          in: query
+          style: form
+          explode: true
+          schema: { type: array, items: { $ref: '#/components/schemas/EquipmentCode' } }
+        - { name: muscle, in: query, description: muscle code, schema: { type: string } }
+        - { name: role, in: query, schema: { type: string, enum: [primary, secondary] } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/ExerciseSummary' } }
+                  next_cursor: { type: string, nullable: true }
+  /exercises/{id}:
+    get:
+      tags: [catalog]
+      summary: Exercise detail
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ExerciseDetail' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /plans:
+    get:
+      tags: [plans]
+      summary: List plans in a date range
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Plan' } }
+    post:
+      tags: [plans]
+      summary: Create plan
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PlanInput' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Plan' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+  /plans/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [plans]
+      summary: Get plan
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Plan' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [plans]
+      summary: Replace plan (whole exercise list, order = array order)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PlanInput' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Plan' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [plans]
+      summary: Delete plan
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/Error' }
+  /sessions:
+    get:
+      tags: [sessions]
+      summary: List sessions
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/SessionStatus' } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/SessionSummary' } }
+                  next_cursor: { type: string, nullable: true }
+    post:
+      tags: [sessions]
+      summary: Start a session (snapshot of plan when plan_id given)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id: { type: string, format: uuid }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /sessions/active:
+    get:
+      tags: [sessions]
+      summary: In-progress session (resume)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /sessions/{id}:
+    get:
+      tags: [sessions]
+      summary: Session with exercises and sets
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /sessions/{id}/sets/{setId}:
+    patch:
+      tags: [sessions]
+      summary: Update a set; returns set plus session progress
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { name: setId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actual_reps: { type: integer, minimum: 0 }
+                duration_seconds: { type: integer, minimum: 0 }
+                completed: { type: boolean }
+                assist_band: { type: string, nullable: true }
+                notes: { type: string, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [set, progress_percent]
+                properties:
+                  set: { $ref: '#/components/schemas/SessionSet' }
+                  progress_percent: { type: number, minimum: 0, maximum: 100, description: completed sets / total sets }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /sessions/{id}/finish:
+    post:
+      tags: [sessions]
+      summary: Finish session
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /records:
+    get:
+      tags: [sessions]
+      summary: Personal records per exercise
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/PersonalRecord' } }
+  /analytics/summary:
+    get:
+      tags: [analytics]
+      summary: Totals and weekly frequency
+      parameters: [{ $ref: '#/components/parameters/Range' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total_workouts, completed_sets, weekly_frequency]
+                properties:
+                  total_workouts: { type: integer }
+                  completed_sets: { type: integer }
+                  weekly_frequency:
+                    type: array
+                    items:
+                      type: object
+                      required: [week_start, workouts]
+                      properties:
+                        week_start: { type: string, format: date }
+                        workouts: { type: integer }
+  /analytics/exercises/{id}/progress:
+    get:
+      tags: [analytics]
+      summary: Reps / hold progression for an exercise
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { $ref: '#/components/parameters/Range' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [series]
+                properties:
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      required: [date]
+                      properties:
+                        date: { type: string, format: date }
+                        best_reps: { type: integer, nullable: true }
+                        best_hold_seconds: { type: integer, nullable: true }
+                        total_sets: { type: integer }
+  /analytics/muscle-frequency:
+    get:
+      tags: [analytics]
+      summary: Training frequency per muscle group / muscle
+      parameters: [{ $ref: '#/components/parameters/Range' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [muscle_code, group_code, sessions]
+                      properties:
+                        muscle_code: { type: string }
+                        group_code: { type: string }
+                        sessions: { type: integer }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Cursor: { name: cursor, in: query, schema: { type: string } }
+    Range: { name: range, in: query, schema: { type: string, enum: [7d, 30d, 90d, 1y, all], default: 30d } }
+  responses:
+    EquipmentList:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [equipment]
+            properties:
+              equipment: { type: array, items: { $ref: '#/components/schemas/Equipment' } }
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: not_found }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+    EquipmentCode:
+      type: string
+      enum: [pullup_bar, parallel_bars, resistance_bands, bodyweight]
+    Category:
+      type: string
+      enum: [push, pull, legs, core, full_body, skills]
+    PlanCategory:
+      description: Category of a plan; includes custom
+      type: string
+      enum: [push, pull, legs, core, full_body, skills, custom]
+    SessionStatus:
+      type: string
+      enum: [in_progress, completed, abandoned]
+    Profile:
+      type: object
+      required: [id, locale, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        display_name: { type: string, nullable: true }
+        locale: { type: string, example: en }
+        created_at: { type: string, format: date-time }
+    Equipment:
+      type: object
+      required: [id, code, name_en]
+      properties:
+        id: { type: integer }
+        code: { $ref: '#/components/schemas/EquipmentCode' }
+        name_en: { type: string }
+        name_th: { type: string, nullable: true }
+    MuscleGroup:
+      type: object
+      required: [id, code, name_en]
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        name_en: { type: string }
+        name_th: { type: string, nullable: true }
+    Muscle:
+      type: object
+      required: [id, group_id, code, name_en, mesh_name]
+      properties:
+        id: { type: integer }
+        group_id: { type: integer }
+        code: { type: string }
+        name_en: { type: string }
+        name_th: { type: string, nullable: true }
+        mesh_name: { type: string, description: Mesh name inside the GLB }
+    ExerciseMuscle:
+      type: object
+      required: [muscle_code, role]
+      properties:
+        muscle_code: { type: string }
+        role: { type: string, enum: [primary, secondary] }
+    ExerciseSummary:
+      type: object
+      required: [id, slug, name_en, category, difficulty, exercise_type, equipment_codes, muscles]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name_en: { type: string }
+        name_th: { type: string, nullable: true }
+        category: { $ref: '#/components/schemas/Category' }
+        difficulty: { type: integer, minimum: 1, maximum: 5 }
+        exercise_type: { type: string, enum: [reps, hold] }
+        equipment_codes: { type: array, items: { $ref: '#/components/schemas/EquipmentCode' } }
+        muscles: { type: array, items: { $ref: '#/components/schemas/ExerciseMuscle' } }
+    ExerciseDetail:
+      allOf:
+        - $ref: '#/components/schemas/ExerciseSummary'
+        - type: object
+          required: [description, instructions, safety_notes, progressions]
+          properties:
+            description: { type: string }
+            instructions: { type: string }
+            safety_notes: { type: string }
+            rec_sets: { type: integer, nullable: true }
+            rec_reps_min: { type: integer, nullable: true }
+            rec_reps_max: { type: integer, nullable: true }
+            rec_hold_seconds: { type: integer, nullable: true }
+            progressions:
+              type: array
+              items:
+                type: object
+                required: [exercise_id, relation]
+                properties:
+                  exercise_id: { type: string, format: uuid }
+                  relation: { type: string, enum: [easier, harder] }
+    PlanExerciseInput:
+      type: object
+      required: [exercise_id, target_sets]
+      properties:
+        exercise_id: { type: string, format: uuid }
+        target_sets: { type: integer, minimum: 1 }
+        target_reps: { type: integer, minimum: 0, nullable: true }
+        hold_seconds: { type: integer, minimum: 0, nullable: true }
+        rest_seconds: { type: integer, minimum: 0, nullable: true }
+        assist_band: { type: string, nullable: true }
+    PlanInput:
+      type: object
+      required: [plan_date, title, category, exercises]
+      properties:
+        plan_date: { type: string, format: date }
+        title: { type: string, maxLength: 120 }
+        category: { $ref: '#/components/schemas/PlanCategory' }
+        target_muscle_group_ids: { type: array, items: { type: integer } }
+        exercises:
+          type: array
+          description: Order of the array defines position
+          items: { $ref: '#/components/schemas/PlanExerciseInput' }
+    Plan:
+      allOf:
+        - $ref: '#/components/schemas/PlanInput'
+        - type: object
+          required: [id, status]
+          properties:
+            id: { type: string, format: uuid }
+            status: { type: string }
+            exercises:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlanExerciseInput'
+                  - type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      position: { type: integer }
+    SessionSet:
+      type: object
+      required: [id, set_number, completed]
+      properties:
+        id: { type: string, format: uuid }
+        set_number: { type: integer }
+        target_reps: { type: integer, nullable: true }
+        actual_reps: { type: integer, nullable: true }
+        duration_seconds: { type: integer, nullable: true }
+        completed: { type: boolean }
+        assist_band: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+    SessionExercise:
+      type: object
+      required: [id, exercise_id, position, sets]
+      properties:
+        id: { type: string, format: uuid }
+        exercise_id: { type: string, format: uuid }
+        exercise_name: { type: string }
+        position: { type: integer }
+        sets: { type: array, items: { $ref: '#/components/schemas/SessionSet' } }
+    SessionSummary:
+      type: object
+      required: [id, status, started_at, progress_percent]
+      properties:
+        id: { type: string, format: uuid }
+        plan_id: { type: string, format: uuid, nullable: true }
+        status: { $ref: '#/components/schemas/SessionStatus' }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        progress_percent: { type: number }
+    Session:
+      allOf:
+        - $ref: '#/components/schemas/SessionSummary'
+        - type: object
+          required: [exercises]
+          properties:
+            notes: { type: string, nullable: true }
+            exercises: { type: array, items: { $ref: '#/components/schemas/SessionExercise' } }
+    PersonalRecord:
+      type: object
+      required: [exercise_id, exercise_name, achieved_at]
+      properties:
+        exercise_id: { type: string, format: uuid }
+        exercise_name: { type: string }
+        best_reps: { type: integer, nullable: true }
+        best_hold_seconds: { type: integer, nullable: true }
+        achieved_at: { type: string, format: date-time }
