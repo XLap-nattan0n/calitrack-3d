@@ -2,10 +2,15 @@
 
 The Go server lives in `cmd/api`. Routes are defined in `internal/httpapi`. Vercel runs `cmd/api/main.go` as a Go server and listens on `$PORT`.
 
-Currently serves `GET /api/v1/health`. It runs `select 1` through a pgx pool on the Supabase pooler (port 6543, simple protocol) and returns `200 {"status":"ok","db":"ok"}`, or `503` if the database check fails.
+Layout: `internal/{config,apierr,auth,db,profile,httpapi}`. Handler → Service → Repository (pgx) per feature; `profile` is the first. Serves public `GET /api/v1/health` and Bearer-protected `GET/PATCH /api/v1/me`. Errors use `{"error":{"code","message","details"}}`.
+
+Health: It runs `select 1` through a pgx pool on the Supabase pooler (port 6543, simple protocol) and returns `200 {"status":"ok","db":"ok"}`, or `503` if the database check fails.
 
 ## Environment
 - `DATABASE_URL`: Supabase pooler URL on port 6543. Store it as a Vercel env var (Preview only) or a Paperclip secret. Never commit it. The password must be percent-encoded and must not be wrapped in `[...]`.
+- `SUPABASE_JWT_ISSUER`: required, e.g. `https://<ref>.supabase.co/auth/v1`.
+- `SUPABASE_JWT_SECRET` (HS256) and/or `SUPABASE_JWKS_URL` (RS256/ES256): at least one. Without them protected routes return 401.
+- `SUPABASE_JWT_AUDIENCE`: defaults to `authenticated`.
 - `PORT`: set by Vercel. Defaults to `8080` locally.
 
 ## Vercel setup
