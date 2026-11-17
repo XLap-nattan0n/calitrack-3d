@@ -3,15 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/config"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/httpapi"
 )
 
+// Vercel runs this as a server on $PORT; locally it is the same router: `go run ./cmd/api`.
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Fatal(http.ListenAndServe(":"+port, httpapi.NewRouter()))
+	cfg := config.Load()
+	log.Printf("listening on :%s", cfg.Port)
+	log.Fatal(http.ListenAndServe(":"+cfg.Port, httpapi.NewRouter(cfg)))
 }
