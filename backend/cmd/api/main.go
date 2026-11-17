@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/httpapi"
 )
 
 func main() {
@@ -11,9 +13,5 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, httpapi.NewRouter()))
 }

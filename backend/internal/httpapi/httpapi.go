@@ -1,4 +1,4 @@
-package handler
+package httpapi
 
 import (
 	"context"
@@ -22,13 +22,7 @@ var (
 	poolErr  error
 )
 
-var router = newRouter()
-
-func Handler(w http.ResponseWriter, r *http.Request) {
-	router.ServeHTTP(w, r)
-}
-
-func newRouter() http.Handler {
+func NewRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/api/v1/health", health)
 	return r
