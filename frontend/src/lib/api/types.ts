@@ -57,7 +57,7 @@ export interface ExerciseQuery {
   q?: string;
   category?: Category | "";
   difficulty?: number | "";
-  /** undefined = API default (user's equipment); [] is never sent */
+  /** undefined = API default (user's equipment); [] = explicitly none (sent as "equipment=") */
   equipment?: EquipmentCode[];
   muscle?: string;
   cursor?: string;
