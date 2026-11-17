@@ -12,6 +12,7 @@ import (
 
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/apierr"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/auth"
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/catalog"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/config"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/db"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/profile"
@@ -22,7 +23,8 @@ func NewRouter(cfg config.Config) http.Handler {
 	pool := db.New(cfg.DatabaseURL)
 	verifier := newVerifier(cfg)
 	ph := profile.NewHandler(profile.NewService(profile.NewPGRepository(pool)))
-	return Build(pool, verifier, ph)
+	ch := catalog.NewHandler(catalog.NewService(catalog.NewPGRepository(pool)))
+	return Build(pool, verifier, ph, ch)
 }
 
 func newVerifier(cfg config.Config) *auth.Verifier {
@@ -43,7 +45,7 @@ func newVerifier(cfg config.Config) *auth.Verifier {
 }
 
 // Build assembles routes from ready dependencies (also used by tests).
-func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler) http.Handler {
+func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Handler) http.Handler {
 	r := chi.NewRouter()
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) { apierr.NotFound(w, "route not found") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
@@ -64,6 +66,13 @@ func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler) http.Handler {
 		}
 		r.Get("/api/v1/me", ph.Get)
 		r.Patch("/api/v1/me", ph.Patch)
+		r.Get("/api/v1/me/equipment", ch.MyEquipment)
+		r.Put("/api/v1/me/equipment", ch.SetMyEquipment)
+		r.Get("/api/v1/equipment", ch.Equipment)
+		r.Get("/api/v1/muscle-groups", ch.MuscleGroups)
+		r.Get("/api/v1/muscles", ch.Muscles)
+		r.Get("/api/v1/exercises", ch.ListExercises)
+		r.Get("/api/v1/exercises/{id}", ch.GetExercise)
 	})
 	return r
 }
