@@ -1,0 +1,9 @@
+# Minimal Supabase CLI local config (no secrets). Run `supabase init` defaults for the rest.
+project_id = "calitrack-3d"
+
+[db]
+port = 54322
+major_version = 15
+
+[db.seed]
+enabled = false   # reference seed lives in migrations; exercises seed is M3.1
