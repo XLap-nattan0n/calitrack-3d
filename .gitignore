@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.log
+.DS_Store
+/backend/bin/
+supabase/.temp/
+supabase/.branches/
