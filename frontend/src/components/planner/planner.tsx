@@ -24,7 +24,10 @@ interface Row {
   band: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const d = new Date(); // local date, not UTC
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 function newRow(ex: ExerciseSummary): Row {
   return {

@@ -43,7 +43,7 @@ export function ExerciseLibrary() {
     setLoading(true);
     setError(null);
     try {
-      const r = await api.listExercises({ q, category, difficulty, muscle, equipment: custom?.length ? custom : undefined, cursor: after });
+      const r = await api.listExercises({ q, category, difficulty, muscle, equipment: custom ?? undefined, cursor: after });
       setItems((prev) => (after ? [...prev, ...r.items] : r.items));
       setCursor(r.next_cursor ?? null);
     } catch (e) {

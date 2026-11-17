@@ -39,7 +39,9 @@ export function exerciseQueryString(q: ExerciseQuery): string {
   if (q.category) p.set("category", q.category);
   if (q.difficulty) p.set("difficulty", String(q.difficulty));
   if (q.muscle) p.set("muscle", q.muscle);
-  q.equipment?.forEach((e) => p.append("equipment", e));
+  // [] => explicit "equipment=" (no equipment); undefined => omit so the API uses saved equipment
+  if (q.equipment?.length === 0) p.set("equipment", "");
+  else q.equipment?.forEach((e) => p.append("equipment", e));
   if (q.cursor) p.set("cursor", q.cursor);
   p.set("limit", String(q.limit ?? 24));
   return p.toString();
