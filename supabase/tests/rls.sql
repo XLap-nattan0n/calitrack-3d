@@ -33,7 +33,7 @@ select pg_temp.assert((select count(*) from public.muscles where mesh_name is no
 
 -- fixture data for user A and user B (as superuser, bypasses RLS)
 insert into public.exercises (id, slug, name_en, category, difficulty, exercise_type)
-  values ('eeeeeeee-0000-0000-0000-000000000001', 'push-up', 'Push-up', 'push', 1, 'reps');
+  values ('eeeeeeee-0000-0000-0000-000000000001', 'rls-fixture-exercise', 'RLS fixture', 'push', 1, 'reps');
 insert into public.workout_plans (id, user_id, plan_date, title, category) values
   ('11111111-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001', current_date, 'A plan', 'push'),
   ('11111111-0000-0000-0000-00000000000b', 'bbbbbbbb-0000-0000-0000-000000000002', current_date, 'B plan', 'push');
@@ -62,7 +62,7 @@ select pg_temp.assert((select count(*) from public.workout_sessions) = 1, 'A see
 select pg_temp.assert((select count(*) from public.session_exercises) = 1, 'A sees only own session_exercises');
 select pg_temp.assert((select count(*) from public.session_sets) = 1, 'A sees only own sets');
 select pg_temp.assert((select count(*) from public.user_equipment) = 0, 'A cannot see B user_equipment');
-select pg_temp.assert((select count(*) from public.exercises) = 1, 'A can read reference exercises');
+select pg_temp.assert((select count(*) from public.exercises where slug = 'rls-fixture-exercise') = 1, 'A can read reference exercises');
 select pg_temp.assert((select count(*) from public.muscles) >= 20, 'A can read reference muscles');
 
 -- 4. A cannot modify B's rows (silently 0 rows affected) ...
