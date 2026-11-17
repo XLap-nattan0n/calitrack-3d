@@ -107,7 +107,7 @@ func (r *PGRepository) ReplaceUserEquipment(ctx context.Context, userID string, 
 	}
 	if _, err := tx.Exec(ctx,
 		`insert into public.user_equipment (user_id, equipment_id)
-		 select $1, id from public.equipment where code = any($2::text[])`, userID, codes); err != nil {
+		 select $1::uuid, id from public.equipment where code = any($2::text[])`, userID, codes); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
