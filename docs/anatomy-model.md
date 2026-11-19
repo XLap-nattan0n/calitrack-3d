@@ -71,3 +71,8 @@ unzip isa_BP3D_4.0_obj_99.zip -d <dir>; cp isa_element_parts.txt <dir>/..   # �
 npm i @gltf-transform/core @gltf-transform/extensions @gltf-transform/functions draco3dgltf
 node scripts/anatomy/build.mjs && node scripts/anatomy/verify.mjs
 ```
+
+## Viewer (NAT-73)
+- หน้า `/anatomy` (`frontend/src/components/anatomy/`), GLB สำเนาที่ `frontend/public/models/anatomy-muscles.glb` (ต้อง sync กับ `assets/anatomy/` เมื่อ rebuild), Draco decoder self-host ที่ `frontend/public/draco/`
+- attribution แสดงท้ายหน้า viewer ตามข้อความ CC BY 4.0 ของ BodyParts3D — **ยังมีประเด็น BY-SA 2.1 JP ที่ต้องให้คนตัดสิน (ดูหัวข้อ License)**
+- มัดที่ไม่มี mesh ตรวจจากชื่อ mesh ใน GLB จริง (ไม่ hard-code) และแสดงในกลุ่ม "No 3D model yet"
