@@ -48,6 +48,13 @@ jobs:
           DB_URL=$(supabase status -o json | jq -r .DB_URL)
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/seed_exercises.sql
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
+      - uses: actions/setup-go@v5
+        with: { go-version-file: backend/go.mod }
+      - name: Backend integration tests (real Postgres)
+        working-directory: backend
+        run: |
+          export TEST_DATABASE_URL=$(supabase status -o json | jq -r .DB_URL)
+          go test -count=1 -run Postgres ./internal/analytics/...
   secret-scan:
     runs-on: ubuntu-latest
     steps:

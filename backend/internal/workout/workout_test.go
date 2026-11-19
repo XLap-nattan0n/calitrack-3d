@@ -273,12 +273,27 @@ func TestPlanValidation(t *testing.T) {
 		`{"title":"t","category":"push","plan_date":"2026-11-20","exercises":[{"exercise_id":"` + exID + `","target_sets":1,"rest_seconds":-1}]}`,
 		`{"title":"t","category":"push","plan_date":"2026-11-20","target_muscle_group_ids":[0],` + ex + `}`,
 	}
+	owned := createPlan(t, h, userA)
 	for i, b := range bad {
-		for _, m := range []string{"POST /plans", "PUT /plans/" + uid(99)} {
+		for _, m := range []string{"POST /plans", "PUT /plans/" + owned.ID} {
 			parts := strings.SplitN(m, " ", 2)
 			rec := req(h, userA, parts[0], parts[1], b)
 			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), `"bad_request"`) {
 				t.Errorf("case %d %s = %d %s", i, m, rec.Code, rec.Body)
+			}
+		}
+	}
+}
+
+// Ownership (404) must be decided before body validation (400) on PUT /plans/{id}.
+func TestReplacePlanChecksOwnershipBeforeValidation(t *testing.T) {
+	h := router(newMem())
+	p := createPlan(t, h, userA)
+	for name, path := range map[string]string{"foreign": "/plans/" + p.ID, "missing": "/plans/" + uid(99)} {
+		for _, body := range []string{`{"title":""}`, `not json`, `{}`} {
+			rec := req(h, userB, "PUT", path, body)
+			if rec.Code != http.StatusNotFound {
+				t.Errorf("%s plan, body %q = %d %s, want 404", name, body, rec.Code, rec.Body)
 			}
 		}
 	}

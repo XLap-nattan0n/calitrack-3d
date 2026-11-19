@@ -226,6 +226,13 @@ func (s *Service) GetPlan(ctx context.Context, userID, id string) (Plan, error) 
 	return s.repo.GetPlan(ctx, userID, id)
 }
 
+// CheckPlanOwner returns ErrNotFound unless the plan exists and belongs to userID.
+// ReplacePlan callers use it so ownership (404) is decided before body validation (400).
+func (s *Service) CheckPlanOwner(ctx context.Context, userID, id string) error {
+	_, err := s.GetPlan(ctx, userID, id)
+	return err
+}
+
 func (s *Service) ReplacePlan(ctx context.Context, userID, id string, in PlanInput) (Plan, error) {
 	if !uuidRE.MatchString(id) {
 		return Plan{}, ErrNotFound

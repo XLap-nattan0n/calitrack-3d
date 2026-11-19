@@ -121,11 +121,16 @@ func (h *Handler) ReplacePlan(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	id := chi.URLParam(r, "id")
+	if err := h.svc.CheckPlanOwner(r.Context(), uid, id); err != nil {
+		h.fail(w, err)
+		return
+	}
 	var in PlanInput
 	if !decode(w, r, &in, false) {
 		return
 	}
-	p, err := h.svc.ReplacePlan(r.Context(), uid, chi.URLParam(r, "id"), in)
+	p, err := h.svc.ReplacePlan(r.Context(), uid, id, in)
 	if err != nil {
 		h.fail(w, err)
 		return
