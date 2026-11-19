@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import { messages } from "@/constants/messages";
 import type {
   Equipment, EquipmentCode, ExerciseDetail, ExerciseQuery, ExerciseSummary, MuscleGroup, Muscle, Plan, PlanInput,
+  PersonalRecord, Session, SessionSet, SessionSummary, SetPatch,
 } from "./types";
 
 export class ApiError extends Error {
@@ -57,6 +58,32 @@ export const api = {
   getMyEquipment: () => request<{ equipment: Equipment[] }>("/me/equipment"),
   setMyEquipment: (codes: EquipmentCode[]) =>
     request<{ equipment: Equipment[] }>("/me/equipment", { method: "PUT", body: JSON.stringify({ equipment_codes: codes }) }),
+  listPlans: (from: string, to: string) =>
+    request<{ items: Plan[] }>(`/plans?from=${from}&to=${to}`),
+  startSession: (planId: string) =>
+    request<Session>("/sessions", { method: "POST", body: JSON.stringify({ plan_id: planId }) }),
+  /** Resolves null when there is no in-progress session (404). */
+  getActiveSession: async (): Promise<Session | null> => {
+    try {
+      return await request<Session>("/sessions/active");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }
+  },
+  getSession: (id: string) => request<Session>(`/sessions/${encodeURIComponent(id)}`),
+  listSessions: (cursor?: string) =>
+    request<{ items: SessionSummary[]; next_cursor?: string | null }>(
+      `/sessions?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+    ),
+  updateSet: (sessionId: string, setId: string, patch: SetPatch) =>
+    request<{ set: SessionSet; progress_percent: number }>(
+      `/sessions/${encodeURIComponent(sessionId)}/sets/${encodeURIComponent(setId)}`,
+      { method: "PATCH", body: JSON.stringify(patch) },
+    ),
+  finishSession: (id: string, notes?: string) =>
+    request<Session>(`/sessions/${encodeURIComponent(id)}/finish`, { method: "POST", body: JSON.stringify(notes ? { notes } : {}) }),
+  listRecords: () => request<{ items: PersonalRecord[] }>("/records"),
   createPlan: (plan: PlanInput) => request<Plan>("/plans", { method: "POST", body: JSON.stringify(plan) }),
 };
 
