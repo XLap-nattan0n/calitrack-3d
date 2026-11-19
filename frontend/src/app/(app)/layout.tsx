@@ -12,9 +12,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
+        <div className="mx-auto flex min-h-14 max-w-5xl flex-col items-start gap-1 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
           <Link href="/exercises" className="font-semibold">{messages.app.name}</Link>
-          <nav className="flex flex-wrap items-center gap-1">
+          <nav className="-mx-2 flex w-full items-center gap-1 overflow-x-auto px-2 pb-1 sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:shrink-0">
             <Button asChild variant="ghost" size="sm"><Link href="/exercises">{messages.nav.exercises}</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/planner">{messages.nav.planner}</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/workout">{messages.nav.workout}</Link></Button>
