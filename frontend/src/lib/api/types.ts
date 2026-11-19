@@ -114,3 +114,20 @@ export interface PersonalRecord {
   best_hold_seconds?: number | null;
   achieved_at: string;
 }
+
+export type AnalyticsRange = "7d" | "30d" | "90d" | "1y" | "all";
+
+export interface AnalyticsSummary {
+  total_workouts: number;
+  completed_sets: number;
+  weekly_frequency: { week_start: string; workouts: number }[];
+}
+
+export interface ExerciseProgressPoint {
+  date: string;
+  best_reps?: number | null;
+  best_hold_seconds?: number | null;
+  total_sets: number;
+}
+
+export interface MuscleFrequencyItem { muscle_code: string; group_code: string; sessions: number }

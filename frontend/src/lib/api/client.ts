@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { messages } from "@/constants/messages";
 import type {
+  AnalyticsRange, AnalyticsSummary, ExerciseProgressPoint, MuscleFrequencyItem,
   Equipment, EquipmentCode, ExerciseDetail, ExerciseQuery, ExerciseSummary, MuscleGroup, Muscle, Plan, PlanInput,
   PersonalRecord, Session, SessionSet, SessionSummary, SetPatch,
 } from "./types";
@@ -83,6 +84,11 @@ export const api = {
     ),
   finishSession: (id: string, notes?: string) =>
     request<Session>(`/sessions/${encodeURIComponent(id)}/finish`, { method: "POST", body: JSON.stringify(notes ? { notes } : {}) }),
+  getAnalyticsSummary: (range: AnalyticsRange) => request<AnalyticsSummary>(`/analytics/summary?range=${range}`),
+  getExerciseProgress: (id: string, range: AnalyticsRange) =>
+    request<{ series: ExerciseProgressPoint[] }>(`/analytics/exercises/${encodeURIComponent(id)}/progress?range=${range}`),
+  getMuscleFrequency: (range: AnalyticsRange) =>
+    request<{ items: MuscleFrequencyItem[] }>(`/analytics/muscle-frequency?range=${range}`),
   listRecords: () => request<{ items: PersonalRecord[] }>("/records"),
   createPlan: (plan: PlanInput) => request<Plan>("/plans", { method: "POST", body: JSON.stringify(plan) }),
 };
