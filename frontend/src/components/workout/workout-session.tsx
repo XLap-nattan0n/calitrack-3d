@@ -180,10 +180,13 @@ export function WorkoutSession() {
         setSession(active);
         setResumed(true);
       } else {
+        // Include recent past plans (last 30 days) so missed, unstarted plans can still be started.
         const from = new Date();
+        from.setDate(from.getDate() - 30);
         const to = new Date();
         to.setDate(to.getDate() + 14);
-        setPlans((await api.listPlans(isoDate(from), isoDate(to))).items);
+        const items = (await api.listPlans(isoDate(from), isoDate(to))).items;
+        setPlans(items.filter((p) => p.status === "planned"));
       }
     } catch (e) {
       setError(errMsg(e, messages.errors.load));
