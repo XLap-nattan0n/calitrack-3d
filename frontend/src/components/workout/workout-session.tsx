@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api/client";
 import type { Plan, Session, SessionSet, SetPatch } from "@/lib/api/types";
@@ -38,13 +38,14 @@ function SetRow({
   const [reps, setReps] = useState(set.actual_reps?.toString() ?? "");
   const [secs, setSecs] = useState(set.duration_seconds?.toString() ?? "");
   const [notes, setNotes] = useState(set.notes ?? "");
+  const saved = useRef({ reps: set.actual_reps?.toString() ?? "", secs: set.duration_seconds?.toString() ?? "" });
   const [done, setDone] = useState(set.completed);
   const id = `set-${set.id}`;
 
   const numPatch = (): SetPatch => {
     const p: SetPatch = {};
-    if (!hold && reps !== "") p.actual_reps = Math.max(0, Math.trunc(Number(reps)));
-    if (hold && secs !== "") p.duration_seconds = Math.max(0, Math.trunc(Number(secs)));
+    if (!hold) p.actual_reps = reps === "" ? null : Math.max(0, Math.trunc(Number(reps)));
+    if (hold) p.duration_seconds = secs === "" ? null : Math.max(0, Math.trunc(Number(secs)));
     return p;
   };
 
@@ -65,13 +66,13 @@ function SetRow({
         <label className="text-sm" htmlFor={`${id}-secs`}>
           {m.seconds}
           <input id={`${id}-secs`} type="number" inputMode="numeric" min={0} className="mt-1 h-10 w-full rounded-md border bg-background px-2"
-            value={secs} onChange={(e) => setSecs(e.target.value)} onBlur={() => secs !== "" && onSave(numPatch())} />
+            value={secs} onChange={(e) => setSecs(e.target.value)} onBlur={async () => { if (secs !== saved.current.secs && (await onSave(numPatch()))) saved.current.secs = secs; }} />
         </label>
       ) : (
         <label className="text-sm" htmlFor={`${id}-reps`}>
           {m.reps} <span className="text-muted-foreground">({m.target(set.target_reps ?? 0)})</span>
           <input id={`${id}-reps`} type="number" inputMode="numeric" min={0} className="mt-1 h-10 w-full rounded-md border bg-background px-2"
-            value={reps} onChange={(e) => setReps(e.target.value)} onBlur={() => reps !== "" && onSave(numPatch())} />
+            value={reps} onChange={(e) => setReps(e.target.value)} onBlur={async () => { if (reps !== saved.current.reps && (await onSave(numPatch()))) saved.current.reps = reps; }} />
         </label>
       )}
       <label className="text-sm" htmlFor={`${id}-band`}>
@@ -87,7 +88,7 @@ function SetRow({
         <input id={`${id}-notes`} type="text" className="mt-1 h-10 w-full rounded-md border bg-background px-2" value={notes}
           onChange={(e) => setNotes(e.target.value)} onBlur={() => notes !== (set.notes ?? "") && onSave({ notes: notes || null })} />
       </label>
-      {hold && <div className="sm:col-span-5"><HoldTimer onUse={(s) => { setSecs(String(s)); onSave({ duration_seconds: s }); }} /></div>}
+      {hold && <div className="sm:col-span-5"><HoldTimer onUse={(s) => { setSecs(String(s)); onSave({ duration_seconds: s }).then((ok) => { if (ok) saved.current.secs = String(s); }); }} /></div>}
     </li>
   );
 }
@@ -98,7 +99,7 @@ function SessionView({ initial, onFinished }: { initial: Session; onFinished: (s
   const [restKey, setRestKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(initial.notes ?? "");
   const [completedIds, setCompletedIds] = useState(
     () => new Set(initial.exercises.flatMap((e) => e.sets.filter((s) => s.completed).map((s) => s.id))),
   );

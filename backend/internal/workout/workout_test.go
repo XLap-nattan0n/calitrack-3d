@@ -401,7 +401,7 @@ func TestPatchSetValidation(t *testing.T) {
 	h := router(newMem())
 	path := "/sessions/" + uid(1) + "/sets/" + uid(2)
 	for _, b := range []string{
-		``, `{`, `[]`, `{}`, `{"actual_reps":-1}`, `{"actual_reps":1.5}`, `{"actual_reps":"3"}`, `{"actual_reps":null}`,
+		``, `{`, `[]`, `{}`, `{"actual_reps":-1}`, `{"actual_reps":1.5}`, `{"actual_reps":"3"}`,
 		`{"duration_seconds":-5}`, `{"completed":"yes"}`, `{"completed":null}`, `{"id":"x"}`, `{"notes":5}`,
 		`{"notes":"a\u0000b"}`, `{"assist_band":"` + strings.Repeat("a", 51) + `"}`,
 	} {
