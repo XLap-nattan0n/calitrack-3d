@@ -13,8 +13,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen">
       <header className="border-b">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
-          <Link href="/profile" className="font-semibold">{messages.app.name}</Link>
+          <Link href="/exercises" className="font-semibold">{messages.app.name}</Link>
           <nav className="flex items-center gap-1">
+            <Button asChild variant="ghost" size="sm"><Link href="/exercises">{messages.nav.exercises}</Link></Button>
+            <Button asChild variant="ghost" size="sm"><Link href="/planner">{messages.nav.planner}</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/profile">{messages.nav.profile}</Link></Button>
             <form action="/auth/signout" method="post">
               <Button type="submit" variant="outline" size="sm">{messages.nav.logout}</Button>
