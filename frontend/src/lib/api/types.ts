@@ -63,3 +63,54 @@ export interface ExerciseQuery {
   cursor?: string;
   limit?: number;
 }
+
+export type SessionStatus = "in_progress" | "completed" | "abandoned";
+
+export interface SessionSet {
+  id: string;
+  set_number: number;
+  target_reps?: number | null;
+  actual_reps?: number | null;
+  duration_seconds?: number | null;
+  completed: boolean;
+  assist_band?: string | null;
+  notes?: string | null;
+}
+
+export interface SessionExercise {
+  id: string;
+  exercise_id: string;
+  exercise_name?: string;
+  position: number;
+  sets: SessionSet[];
+}
+
+export interface SessionSummary {
+  id: string;
+  plan_id?: string | null;
+  status: SessionStatus;
+  started_at: string;
+  finished_at?: string | null;
+  progress_percent: number;
+}
+
+export interface Session extends SessionSummary {
+  notes?: string | null;
+  exercises: SessionExercise[];
+}
+
+export interface SetPatch {
+  actual_reps?: number;
+  duration_seconds?: number;
+  completed?: boolean;
+  assist_band?: string | null;
+  notes?: string | null;
+}
+
+export interface PersonalRecord {
+  exercise_id: string;
+  exercise_name: string;
+  best_reps?: number | null;
+  best_hold_seconds?: number | null;
+  achieved_at: string;
+}
