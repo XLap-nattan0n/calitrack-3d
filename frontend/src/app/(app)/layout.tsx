@@ -20,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Button asChild variant="ghost" size="sm"><Link href="/workout">{messages.nav.workout}</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/history">{messages.nav.history}</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/analytics">{messages.nav.analytics}</Link></Button>
+            <Button asChild variant="ghost" size="sm"><Link href="/anatomy">{messages.nav.anatomy}</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/profile">{messages.nav.profile}</Link></Button>
             <form action="/auth/signout" method="post">
               <Button type="submit" variant="outline" size="sm">{messages.nav.logout}</Button>
