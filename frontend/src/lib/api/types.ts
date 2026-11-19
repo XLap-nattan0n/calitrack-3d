@@ -100,8 +100,8 @@ export interface Session extends SessionSummary {
 }
 
 export interface SetPatch {
-  actual_reps?: number;
-  duration_seconds?: number;
+  actual_reps?: number | null;
+  duration_seconds?: number | null;
   completed?: boolean;
   assist_band?: string | null;
   notes?: string | null;

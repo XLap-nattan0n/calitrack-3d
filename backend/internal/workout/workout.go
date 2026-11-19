@@ -471,10 +471,10 @@ func validatePlanExercise(i int, e *PlanExerciseInput) error {
 }
 
 func validatePatch(p SetPatch) error {
-	if p.ActualReps.Set && (p.ActualReps.Value == nil || *p.ActualReps.Value < 0 || *p.ActualReps.Value > maxIntValue) {
+	if p.ActualReps.Set && p.ActualReps.Value != nil && (*p.ActualReps.Value < 0 || *p.ActualReps.Value > maxIntValue) {
 		return invalid("actual_reps", "must be a non-negative integer")
 	}
-	if p.DurationSeconds.Set && (p.DurationSeconds.Value == nil || *p.DurationSeconds.Value < 0 || *p.DurationSeconds.Value > maxIntValue) {
+	if p.DurationSeconds.Set && p.DurationSeconds.Value != nil && (*p.DurationSeconds.Value < 0 || *p.DurationSeconds.Value > maxIntValue) {
 		return invalid("duration_seconds", "must be a non-negative integer")
 	}
 	if p.Completed.Set && p.Completed.Value == nil {
