@@ -32,6 +32,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ./scripts/lint-migrations.sh
+  supabase-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: supabase start
+      - run: supabase db reset
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Seed and RLS checks
+        run: |
+          DB_URL=$(supabase status -o json | jq -r .DB_URL)
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/seed_exercises.sql
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
   secret-scan:
     runs-on: ubuntu-latest
     steps:
