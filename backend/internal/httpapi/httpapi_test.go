@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/analytics"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -57,7 +58,7 @@ func newTestRouter(t *testing.T) http.Handler {
 		"user-a": {ID: "user-a", Locale: "en", CreatedAt: time.Unix(0, 0).UTC()},
 		"user-b": {ID: "user-b", Locale: "th", CreatedAt: time.Unix(0, 0).UTC()},
 	}}
-	return Build(db.New(""), v, profile.NewHandler(profile.NewService(repo)), catalog.NewHandler(catalog.NewService(&stubCatalog{})), workout.NewHandler(workout.NewService(&stubWorkout{})))
+	return Build(db.New(""), v, profile.NewHandler(profile.NewService(repo)), catalog.NewHandler(catalog.NewService(&stubCatalog{})), workout.NewHandler(workout.NewService(&stubWorkout{})), analytics.NewHandler(analytics.NewService(&stubAnalytics{})))
 }
 
 func tokenFor(t *testing.T, sub string) string {
@@ -157,6 +158,11 @@ func TestCatalogRoutesRequireAuth(t *testing.T) {
 	}
 }
 
+// stubAnalytics satisfies analytics.Repository for router-level tests.
+type stubAnalytics struct{ analytics.Repository }
+
+func (*stubAnalytics) ExerciseExists(context.Context, string) (bool, error) { return false, nil }
+
 // stubWorkout satisfies workout.Repository for router-level tests.
 type stubWorkout struct{ workout.Repository }
 
@@ -173,6 +179,8 @@ func TestWorkoutRoutesRequireAuthAndMap404(t *testing.T) {
 		{"GET", "/api/v1/sessions"}, {"POST", "/api/v1/sessions"}, {"GET", "/api/v1/sessions/active"},
 		{"GET", "/api/v1/sessions/" + id}, {"PATCH", "/api/v1/sessions/" + id + "/sets/" + id},
 		{"POST", "/api/v1/sessions/" + id + "/finish"}, {"GET", "/api/v1/records"},
+		{"GET", "/api/v1/analytics/summary"}, {"GET", "/api/v1/analytics/muscle-frequency"},
+		{"GET", "/api/v1/analytics/exercises/" + id + "/progress"},
 	}
 	for _, rt := range routes {
 		if rec := do(h, rt.method, rt.path, "", "{}"); rec.Code != http.StatusUnauthorized {

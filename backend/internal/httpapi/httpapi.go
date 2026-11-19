@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/analytics"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/apierr"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/auth"
 	"github.com/XLap-nattan0n/calitrack-3d/backend/internal/catalog"
@@ -26,7 +27,8 @@ func NewRouter(cfg config.Config) http.Handler {
 	ph := profile.NewHandler(profile.NewService(profile.NewPGRepository(pool)))
 	ch := catalog.NewHandler(catalog.NewService(catalog.NewPGRepository(pool)))
 	wh := workout.NewHandler(workout.NewService(workout.NewPGRepository(pool)))
-	return Build(pool, verifier, ph, ch, wh)
+	ah := analytics.NewHandler(analytics.NewService(analytics.NewPGRepository(pool)))
+	return Build(pool, verifier, ph, ch, wh, ah)
 }
 
 func newVerifier(cfg config.Config) *auth.Verifier {
@@ -47,7 +49,7 @@ func newVerifier(cfg config.Config) *auth.Verifier {
 }
 
 // Build assembles routes from ready dependencies (also used by tests).
-func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Handler, wh *workout.Handler) http.Handler {
+func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Handler, wh *workout.Handler, ah *analytics.Handler) http.Handler {
 	r := chi.NewRouter()
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) { apierr.NotFound(w, "route not found") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
@@ -88,6 +90,10 @@ func Build(pool *db.Pool, v *auth.Verifier, ph *profile.Handler, ch *catalog.Han
 		r.Patch("/api/v1/sessions/{id}/sets/{setId}", wh.UpdateSet)
 		r.Post("/api/v1/sessions/{id}/finish", wh.FinishSession)
 		r.Get("/api/v1/records", wh.Records)
+
+		r.Get("/api/v1/analytics/summary", ah.Summary)
+		r.Get("/api/v1/analytics/exercises/{id}/progress", ah.Progress)
+		r.Get("/api/v1/analytics/muscle-frequency", ah.MuscleFrequency)
 	})
 	return r
 }
