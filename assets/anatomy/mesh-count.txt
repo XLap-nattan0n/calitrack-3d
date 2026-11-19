@@ -1,0 +1,27 @@
+meshes 24 nodes 24
+pectoralis_major 10666 20992 6
+pectoralis_minor 9556 18936 2
+serratus_anterior 49218 98424 2
+trapezius 22386 44196 6
+rhomboids 9460 18816 4
+teres_major 1150 2084 2
+erector_spinae 55102 109792 14
+anterior_deltoid 2106 4412 2
+lateral_deltoid 1330 2600 2
+posterior_deltoid 2066 3800 2
+rotator_cuff 4256 8684 8
+biceps_brachii 3346 6564 4
+brachialis 1778 3492 2
+triceps_brachii 5078 10052 6
+forearm_flexors 26974 53368 18
+forearm_extensors 25182 49444 22
+obliques 112084 223652 2
+gluteus_maximus 2424 4752 2
+gluteus_medius 3368 6712 2
+quadriceps 21208 42376 8
+hamstrings 14178 28324 8
+adductors 12022 24020 8
+hip_flexors 7968 15524 4
+calves 11348 22624 6
+total verts 414254 tris 823640 min [ '-0.319', '0.032', '-0.025' ] max [ '0.319', '1.506', '0.219' ]
+missing: [ 'latissimus_dorsi', 'rectus_abdominis', 'transversus_abdominis' ]
