@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { messages } from "@/constants/messages";
 import { Button } from "@/components/ui/button";
 
@@ -10,17 +10,27 @@ export const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padSta
 
 /** Wall-clock based ticking so background tabs do not drift. Returns elapsed whole seconds. */
 function useStopwatch(running: boolean, baseSeconds: number) {
-  const [elapsed, setElapsed] = useState(baseSeconds);
+  const [elapsed, setElapsedState] = useState(baseSeconds);
   const baseRef = useRef(baseSeconds);
-  useEffect(() => {
-    baseRef.current = elapsed;
-  }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
+  const startedAtRef = useRef(Date.now());
+  // External sets (reset/restart) re-anchor the running interval, so it never overwrites them with stale values.
+  const setElapsed = useCallback((value: number) => {
+    baseRef.current = value;
+    startedAtRef.current = Date.now();
+    setElapsedState(value);
+  }, []);
   useEffect(() => {
     if (!running) return;
-    const startedAt = Date.now();
-    const base = baseRef.current;
-    const id = setInterval(() => setElapsed(base + Math.floor((Date.now() - startedAt) / 1000)), 250);
-    return () => clearInterval(id);
+    startedAtRef.current = Date.now();
+    const id = setInterval(
+      () => setElapsedState(baseRef.current + Math.floor((Date.now() - startedAtRef.current) / 1000)),
+      250,
+    );
+    return () => {
+      // Pausing: freeze progress so resume continues from here.
+      baseRef.current += Math.floor((Date.now() - startedAtRef.current) / 1000);
+      clearInterval(id);
+    };
   }, [running]);
   return [elapsed, setElapsed] as const;
 }
@@ -57,7 +67,7 @@ export function RestTimer({ seconds, startKey, onDone }: { seconds: number; star
       <Button size="sm" variant="outline" onClick={() => setRunning((r) => !r)} disabled={remaining === 0}>
         {running ? t.pause : t.start}
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => { setTotal((x) => x + 15); finished.current = false; }}>{t.add15}</Button>
+      <Button size="sm" variant="ghost" onClick={() => { setTotal((x) => x + 15); finished.current = false; if (remaining === 0) setRunning(true); }}>{t.add15}</Button>
       <Button size="sm" variant="ghost" onClick={() => { setRunning(false); setElapsed(total); }}>{t.restSkip}</Button>
       {remaining === 0 && startKey > 0 && <span role="status" className="text-sm text-muted-foreground">{t.restDone}</span>}
     </div>
